@@ -1,0 +1,30 @@
+{
+	"name": "challenge-one",
+	"version": "1.0.0",
+	"description": "Simple Node developer challenge.",
+	"main": "store",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"lint": "prettier --write \"**/*.{js,json}\""
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/dougalg/challenge-one.git"
+	},
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/dougalg/challenge-one/issues"
+	},
+	"homepage": "https://github.com/dougalg/challenge-one#readme",
+	"devDependencies": {
+		"husky": "3.1.0",
+		"prettier": "1.19.1",
+		"pretty-quick": "2.0.1"
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "pretty-quick --staged"
+		}
+	}
+}
