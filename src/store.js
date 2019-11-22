@@ -1,17 +1,6 @@
-const { promisify } = require("util");
-const fs = require("fs");
-const path = require("path");
 const crypto = require("crypto");
-
-const writeFileAsync = promisify(fs.writeFile);
-const readFileAsync = promisify(fs.readFile);
-const mkdirAsync = promisify(fs.mkdir);
-const unlinkAsync = promisify(fs.unlink);
-
-const INDEX_FILENAME = "index";
-const CACHE_DIR = "cache";
-const READ_WRITE_OPTIONS = { encoding: "utf8" };
-const DEFAULT_INDEX = JSON.stringify({});
+const { CacheFs } = require("./cacheFs.js");
+const { IndexFs } = require("./indexFs.js");
 
 const hashKey = string =>
 	crypto
@@ -24,9 +13,8 @@ class Store {
 		if (!options.cacheDir) {
 			throw Error("You must provide cacheDir as an absolute path.");
 		}
-		this._cacheDirRoot = options.cacheDir;
-		this._cacheDir = path.join(this._cacheDirRoot, CACHE_DIR);
-		this._indexFilePath = path.join(this._cacheDirRoot, INDEX_FILENAME);
+		this._cacheFs = new CacheFs(options);
+		this._indexFs = new IndexFs(options);
 	}
 
 	async add(key, ...values) {
@@ -36,19 +24,19 @@ class Store {
 			);
 			return;
 		}
-		const index = await this._getIndex();
+		const index = await this._indexFs.index;
 		if (index[key]) {
 			console.error(
 				`Key '${key}' already exists. If you'd like to replace, it, please use \`remove ${key}\` first.`
 			);
 			return;
 		}
+
 		const hash = hashKey(key);
-		index[key] = hash;
 
 		await Promise.all([
-			this._writeCacheFile(hash, values.join(" ")),
-			this._writeIndex(index)
+			this._cacheFs.writeCacheFile(hash, values.join(" ")),
+			this._indexFs.add(key, hash).then(() => this._indexFs.write())
 		]);
 	}
 
@@ -58,7 +46,13 @@ class Store {
 			return;
 		}
 		const cacheFiles = await Promise.all(
-			keys.map(this._readCacheFile.bind(this))
+			keys.map(async key => {
+				const fileData = await this._cacheFs.readCacheFile(hashKey(key));
+				return {
+					key,
+					fileData
+				};
+			})
 		);
 		cacheFiles
 			.sort(({ fileData: a }, { fileData: b }) => Boolean(b) - Boolean(a))
@@ -66,7 +60,7 @@ class Store {
 	}
 
 	async list() {
-		const index = await this._getIndex();
+		const index = await this._indexFs.index;
 		Object.keys(index).forEach(k => console.log(k));
 	}
 
@@ -76,81 +70,12 @@ class Store {
 			return;
 		}
 		const cacheDeletions = Promise.all(
-			keys.map(hashKey).map(this._deleteCacheFile.bind(this))
+			keys.map(key => this._cacheFs.deleteCacheFile(hashKey(key)))
 		);
-		const index = await this._getIndex();
 
-		keys.forEach(key => {
-			delete index[key];
-		});
+		keys.forEach(key => this._indexFs.remove(key));
 
-		await Promise.all([cacheDeletions, this._writeIndex(index)]);
-	}
-
-	_pathToCacheFile(hash) {
-		return path.join(this._cacheDir, hash);
-	}
-
-	async _initCache() {
-		await mkdirAsync(this._cacheDir, { recursive: true });
-	}
-
-	async _deleteCacheFile(hash) {
-		try {
-			await unlinkAsync(this._pathToCacheFile(hash));
-		} catch (e) {
-			if (e.code === "ENOENT") {
-				return;
-			}
-			throw e;
-		}
-	}
-
-	async _writeCacheFile(hash, contents) {
-		await writeFileAsync(
-			this._pathToCacheFile(hash),
-			contents,
-			READ_WRITE_OPTIONS
-		);
-	}
-
-	async _readCacheFile(key) {
-		const hash = hashKey(key);
-		const fileData = await readFileOrDefault(this._pathToCacheFile(hash), null);
-		return {
-			key,
-			fileData
-		};
-	}
-
-	async _writeIndex(index) {
-		await writeFileAsync(
-			this._indexFilePath,
-			JSON.stringify(index),
-			READ_WRITE_OPTIONS
-		);
-	}
-
-	async _getIndex() {
-		await this._initCache();
-		const data = await readFileOrDefault(this._indexFilePath, DEFAULT_INDEX);
-		return JSON.parse(data);
-	}
-}
-
-/**
- * Reads a file and returns the result. If the file does not exist, returns the given
- * default value
- */
-async function readFileOrDefault(path, defaultValue = null) {
-	try {
-		return await readFileAsync(path, READ_WRITE_OPTIONS);
-	} catch (e) {
-		// If we haven't created the index yet, just return an empty object, and write it at the end
-		if (e.code === "ENOENT") {
-			return defaultValue;
-		}
-		throw e;
+		await Promise.all([cacheDeletions, this._indexFs.write()]);
 	}
 }
 
