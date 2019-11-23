@@ -74,17 +74,22 @@ describe("parseArgs", function() {
 });
 
 describe("run", function() {
+	afterEach(function() {
+		jest.restoreAllMocks();
+	});
 	describe("with an empty cmd", function() {
 		const expectedLog =
 			'You must specify a command. Valid options are: "add", "list", "get", "remove".';
 
-		it("logs a console error listing valid commands", async function() {
+		beforeEach(async function() {
 			errorSpy = jest.spyOn(global.console, "error").mockImplementation();
 			await run({}, {});
+		});
+
+		it("logs a console error listing valid commands", async function() {
 			expect(errorSpy.mock.calls.length).toEqual(1);
 			expect(errorSpy.mock.calls[0].length).toEqual(1);
 			expect(errorSpy.mock.calls[0][0]).toEqual(expectedLog);
-			jest.restoreAllMocks();
 		});
 	});
 	describe("with a non-valid cmd", function() {

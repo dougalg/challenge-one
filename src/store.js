@@ -20,14 +20,15 @@ class Store {
 	async add(key, ...values) {
 		if (!key || values.length === 0) {
 			console.error(
-				`You must provide a key and value to add: \`add [KEY] [VALUE]\`.`
+				"You must provide a key and value to add: `store add [KEY] [VALUE]`."
 			);
 			return;
 		}
 		const index = await this._indexFs.index;
+
 		if (index[key]) {
 			console.error(
-				`Key '${key}' already exists. If you'd like to replace, it, please use \`remove ${key}\` first.`
+				`Key '${key}' already exists. If you'd like to replace, it, please use \`store remove ${key}\` first.`
 			);
 			return;
 		}
