@@ -7,4 +7,8 @@ const STORE_CONFIG = {
 	cacheDir: path.join(__dirname, ".cache")
 };
 
+/**
+ * This is essentially a do-nothing file to pull the pieces together in
+ * a simple way, and pass in a base config
+ */
 run(new Store(STORE_CONFIG), parseArgs(process.argv));

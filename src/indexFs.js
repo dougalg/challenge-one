@@ -10,6 +10,13 @@ const mkdirAsync = promisify(fs.mkdir);
 const INDEX_FILENAME = "index";
 const DEFAULT_INDEX = JSON.stringify({});
 
+/**
+ * A simple low-level interface for working with the index file. Used to keep a
+ * list of all the valid keys and their associated hashes.
+ *
+ * TODO: Consider replacing the Object{ key: hash } with an array of keys
+ * TODO: Extract out similarities with cacheFs
+ */
 class IndexFs {
 	constructor(options = {}) {
 		this._cacheDirRoot = options.cacheDir;

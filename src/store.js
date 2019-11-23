@@ -8,6 +8,11 @@ const hashKey = string =>
 		.update(string)
 		.digest("hex");
 
+/**
+ * Handles the high-level details of each possible action, including
+ * giving responses to the based on input and state, and calling into the
+ * low-level interfaces fir cache and index as appropriate
+ */
 class Store {
 	constructor(options = {}) {
 		if (!options.cacheDir) {
@@ -17,8 +22,21 @@ class Store {
 		this._indexFs = new IndexFs(options);
 	}
 
+	/**
+	 * Add a key an value to the store
+	 *
+	 * @param {String} key - A single key to add to the store. Must not match an existing key in the store
+	 * @param  {...String} values - An array of strings which will be concatenated with spaces
+	 */
 	async add(key, ...values) {
 		if (!key || values.length === 0) {
+			/**
+			 * Might want to consider a better error handling interface, eg: throwing
+			 * an error here and handling it with a nice console log and a non-zero exit
+			 * code, but in a higher
+			 *
+			 * Same for all error logs.
+			 */
 			console.error(
 				"You must provide a key and value to add: `store add [KEY] [VALUE]`."
 			);
@@ -41,6 +59,12 @@ class Store {
 		]);
 	}
 
+	/**
+	 * Returns the value for a *single* key. In future, might add support for multiple
+	 * keys, but the interface would need to depend on user needs
+	 *
+	 * @param {String} key - The key for which you'd like to retrieve a value.
+	 */
 	async get(key) {
 		if (!key) {
 			console.error("You must provide a key to get: `store get [KEY]`.");
@@ -53,11 +77,24 @@ class Store {
 		});
 	}
 
+	/**
+	 * Lists all keys in the store
+	 */
 	async list() {
 		const index = await this._indexFs.index;
+		/**
+		 * TODO: Replace console.log with an interface. This will make tests more
+		 * robust an easier to debug.
+		 */
 		Object.keys(index).forEach(k => console.log(k));
 	}
 
+	/**
+	 * Removes any number of keys and their associated values from the store.
+	 * Non-existent keys are ignored
+	 *
+	 * @param  {...String} keys - The keys of the items to remove
+	 */
 	async remove(...keys) {
 		if (keys.length < 1) {
 			console.error("You must provide keys to remove: `store remove [KEY]`.");

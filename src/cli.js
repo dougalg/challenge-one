@@ -2,6 +2,12 @@ const COMMANDS = require("./constants/commands.js");
 
 const VALID_COMMANDS = Object.values(COMMANDS).join('", "');
 
+/**
+ * Handles passing args from the user to the actual store module
+ *
+ * @param {Store} store - A Store instance
+ * @param {Args} param1 - Parsed user params, consisting of a command and args for that comman
+ */
 async function run(store, { cmd, cmdArgs }) {
 	if (!cmd) {
 		console.error(

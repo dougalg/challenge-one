@@ -10,6 +10,11 @@ const mkdirAsync = promisify(fs.mkdir);
 
 const CACHE_DIR = "cache";
 
+/**
+ * A simple low-level interface for working with the cache files
+ *
+ * TODO: Extract out similarities with indexFs
+ */
 class CacheFs {
 	constructor(options = {}) {
 		this._cacheDir = path.join(options.cacheDir, CACHE_DIR);
