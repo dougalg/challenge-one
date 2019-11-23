@@ -7,22 +7,30 @@ describe("store", function() {
 	let Store;
 	let errorSpy;
 	beforeEach(function() {
-		jest.mock("fs", () => ({
-			readFile: jest.fn((a, b, cb) => {
-				const e = new Error();
-				e.code = "ENOENT";
-				throw e;
-			}),
-			writeFile: jest.fn((a, b, c, cb) => {
-				cb();
-			}),
-			unlink: jest.fn((a, cb) => {
-				cb();
-			}),
-			mkdir: jest.fn((a, b, cb) => {
-				cb();
-			})
-		}));
+		jest.mock("fs", () => {
+			const fakeState = {};
+			return {
+				readFile: jest.fn((path, b, cb) => {
+					if (fakeState[path]) {
+						return cb(null, Buffer.from(fakeState[path], "utf8"));
+					}
+					const e = new Error();
+					e.code = "ENOENT";
+					throw e;
+				}),
+				writeFile: jest.fn((path, value, c, cb) => {
+					fakeState[path] = value;
+					cb();
+				}),
+				unlink: jest.fn((path, cb) => {
+					delete fakeState[path];
+					cb();
+				}),
+				mkdir: jest.fn((a, b, cb) => {
+					cb();
+				})
+			};
+		});
 		fs = require("fs");
 		Store = require("./store.js").Store;
 		errorSpy = jest.spyOn(global.console, "error").mockImplementation();
@@ -51,12 +59,12 @@ describe("store", function() {
 				await store.add();
 			});
 			it("logs an error", function() {
-				expect(errorSpy.mock.calls.length).toEqual(1);
+				expect(errorSpy).toHaveBeenCalledTimes(1);
 				expect(errorSpy.mock.calls[0].length).toEqual(1);
 				expect(errorSpy.mock.calls[0][0]).toEqual(expectedLog);
 			});
 			it("does not create any files", function() {
-				expect(fs.writeFile.mock.calls.length).toEqual(0);
+				expect(fs.writeFile).toHaveBeenCalledTimes(0);
 			});
 		});
 		describe("called with no values", function() {
@@ -67,12 +75,12 @@ describe("store", function() {
 				await store.add("testKey");
 			});
 			it("logs an error", function() {
-				expect(errorSpy.mock.calls.length).toEqual(1);
+				expect(errorSpy).toHaveBeenCalledTimes(1);
 				expect(errorSpy.mock.calls[0].length).toEqual(1);
 				expect(errorSpy.mock.calls[0][0]).toEqual(expectedLog);
 			});
 			it("does not create any files", function() {
-				expect(fs.writeFile.mock.calls.length).toEqual(0);
+				expect(fs.writeFile).toHaveBeenCalledTimes(0);
 			});
 		});
 		// Should write the INDEX, and 'wow' files once for the first `add`
@@ -86,10 +94,10 @@ describe("store", function() {
 				await store.add(key, value);
 			});
 			it("does not log an error", function() {
-				expect(errorSpy.mock.calls.length).toEqual(0);
+				expect(errorSpy).toHaveBeenCalledTimes(0);
 			});
 			it("creates the index and the cache file", function() {
-				expect(fs.writeFile.mock.calls.length).toEqual(
+				expect(fs.writeFile).toHaveBeenCalledTimes(
 					NUMBER_OF_WRITE_FILE_CALLS_FOR_SINGLE_ADD
 				);
 				expect(fs.writeFile.mock.calls[0][0]).toEqual(
@@ -118,12 +126,12 @@ describe("store", function() {
 				await store.add(key, "wow");
 			});
 			it("logs an error", function() {
-				expect(errorSpy.mock.calls.length).toEqual(1);
+				expect(errorSpy).toHaveBeenCalledTimes(1);
 				expect(errorSpy.mock.calls[0].length).toEqual(1);
 				expect(errorSpy.mock.calls[0][0]).toEqual(expectedLog);
 			});
 			it("creates only the initial files for a single add call", function() {
-				expect(fs.writeFile.mock.calls.length).toEqual(
+				expect(fs.writeFile).toHaveBeenCalledTimes(
 					NUMBER_OF_WRITE_FILE_CALLS_FOR_SINGLE_ADD
 				);
 				expect(fs.writeFile.mock.calls[0][0]).toEqual(
@@ -143,10 +151,10 @@ describe("store", function() {
 				await store.add("b", "wow", "2");
 			});
 			it("does not log an error", function() {
-				expect(errorSpy.mock.calls.length).toEqual(0);
+				expect(errorSpy).toHaveBeenCalledTimes(0);
 			});
 			it("adds an entry to the index for each item", function() {
-				expect(fs.writeFile.mock.calls.length).toEqual(4);
+				expect(fs.writeFile).toHaveBeenCalledTimes(4);
 				expect(fs.writeFile.mock.calls[1][0]).toEqual(
 					`${STORE_OPTIONS.cacheDir}/cache/${hash1}`
 				);
@@ -170,7 +178,37 @@ describe("store", function() {
 			});
 		});
 	});
-	describe("get", function() {});
+	describe("get", function() {
+		describe("a single valid key", function() {
+			let logSpy;
+			beforeEach(async function() {
+				logSpy = jest.spyOn(global.console, "log").mockImplementation();
+				const store = new Store(STORE_OPTIONS);
+				await store.add("a", "test");
+				await store.get("a");
+			});
+
+			it("logs the expected result", function() {
+				expect(logSpy).toHaveBeenCalledTimes(1);
+				expect(logSpy).toHaveBeenNthCalledWith(1, "test");
+			});
+		});
+		describe("a single non-valid key", function() {
+			const key = "a";
+			beforeEach(async function() {
+				const store = new Store(STORE_OPTIONS);
+				await store.get(key);
+			});
+
+			it("logs the expected error", function() {
+				expect(errorSpy).toHaveBeenCalledTimes(1);
+				expect(errorSpy).toHaveBeenNthCalledWith(
+					1,
+					`Key '${key}' does not exist. Please use \`store add ${key} [VALUE]\` first.`
+				);
+			});
+		});
+	});
 	describe("list", function() {});
 	describe("remove", function() {});
 });

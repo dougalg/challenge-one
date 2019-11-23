@@ -41,23 +41,16 @@ class Store {
 		]);
 	}
 
-	async get(...keys) {
-		if (keys.length < 1) {
-			console.error(`You must provide keys to get: \`get [KEY]\`.`);
+	async get(key) {
+		if (!key) {
+			console.error(`You must provide a key to get: \`get [KEY]\`.`);
 			return;
 		}
-		const cacheFiles = await Promise.all(
-			keys.map(async key => {
-				const fileData = await this._cacheFs.readCacheFile(hashKey(key));
-				return {
-					key,
-					fileData
-				};
-			})
-		);
-		cacheFiles
-			.sort(({ fileData: a }, { fileData: b }) => Boolean(b) - Boolean(a))
-			.forEach(writeKeyResult);
+		const fileData = await this._cacheFs.readCacheFile(hashKey(key));
+		writeKeyResult({
+			key,
+			fileData
+		});
 	}
 
 	async list() {
@@ -83,12 +76,10 @@ class Store {
 function writeKeyResult({ key, fileData }) {
 	if (fileData === null) {
 		console.error(
-			`Key '${key}' does not exist. Please use \`add ${key} [VALUE]\` first.`
+			`Key '${key}' does not exist. Please use \`store add ${key} [VALUE]\` first.`
 		);
 	} else {
-		console.log(`Value for key "${key}":`);
 		console.log(fileData.toString());
-		console.log();
 	}
 }
 
