@@ -179,6 +179,21 @@ describe("store", function() {
 		});
 	});
 	describe("get", function() {
+		describe("with no keys", function() {
+			beforeEach(async function() {
+				const store = new Store(STORE_OPTIONS);
+				await store.get();
+			});
+
+			it("logs the expected error", function() {
+				expect(errorSpy).toHaveBeenCalledTimes(1);
+				expect(errorSpy).toHaveBeenNthCalledWith(
+					1,
+					"You must provide a key to get: `store get [KEY]`."
+				);
+			});
+		});
+
 		describe("a single valid key", function() {
 			let logSpy;
 			beforeEach(async function() {
@@ -209,6 +224,121 @@ describe("store", function() {
 			});
 		});
 	});
-	describe("list", function() {});
-	describe("remove", function() {});
+	describe("list", function() {
+		describe("when empty", function() {
+			let logSpy;
+			beforeEach(async function() {
+				logSpy = jest.spyOn(global.console, "log").mockImplementation();
+				const store = new Store(STORE_OPTIONS);
+				await store.list();
+			});
+
+			it("logs no result", function() {
+				expect(logSpy).toHaveBeenCalledTimes(0);
+			});
+		});
+		describe("with a single item", function() {
+			let logSpy;
+			beforeEach(async function() {
+				logSpy = jest.spyOn(global.console, "log").mockImplementation();
+				const store = new Store(STORE_OPTIONS);
+				await store.add("a", "test");
+				await store.list();
+			});
+
+			it("logs the expected result", function() {
+				expect(logSpy).toHaveBeenCalledTimes(1);
+				expect(logSpy).toHaveBeenCalledWith("a");
+			});
+		});
+		describe("with multiple items", function() {
+			let logSpy;
+			beforeEach(async function() {
+				logSpy = jest.spyOn(global.console, "log").mockImplementation();
+				const store = new Store(STORE_OPTIONS);
+				await store.add("a", "test");
+				await store.add("b", "test b");
+				await store.add("c", "test c");
+				await store.list();
+			});
+
+			it("logs a result for each key", function() {
+				expect(logSpy).toHaveBeenCalledTimes(3);
+			});
+
+			it("logs the expected result for each key", function() {
+				expect(logSpy).toHaveBeenCalledWith("a");
+				expect(logSpy).toHaveBeenCalledWith("b");
+				expect(logSpy).toHaveBeenCalledWith("c");
+			});
+		});
+	});
+	describe("remove", function() {
+		describe("a non-existent item", function() {
+			beforeEach(async function() {
+				const store = new Store(STORE_OPTIONS);
+				logSpy = jest.spyOn(global.console, "log").mockImplementation();
+				await store.remove("random-crap");
+			});
+
+			it("does not write to log or error", function() {
+				expect(errorSpy).toHaveBeenCalledTimes(0);
+				expect(logSpy).toHaveBeenCalledTimes(0);
+			});
+		});
+
+		describe("with no arguments", function() {
+			beforeEach(async function() {
+				const store = new Store(STORE_OPTIONS);
+				await store.remove();
+			});
+
+			it("raises an error", function() {
+				expect(errorSpy).toHaveBeenCalledTimes(1);
+				expect(errorSpy).toHaveBeenNthCalledWith(
+					1,
+					"You must provide keys to remove: `store remove [KEY]`."
+				);
+			});
+		});
+
+		describe("multiple existing items then attempting to get and list them", function() {
+			const removedKey1 = "a";
+			const removedKey2 = "あ";
+
+			const validKey1 = "b";
+			const validKey2 = "d";
+
+			beforeEach(async function() {
+				logSpy = jest.spyOn(global.console, "log").mockImplementation();
+				const store = new Store(STORE_OPTIONS);
+				await store.add(removedKey1, "b");
+				await store.add(validKey1, "c");
+				await store.add(validKey2, "ฟหดด");
+				await store.add(removedKey2, "e");
+				await store.remove(removedKey1, removedKey2);
+				await store.get("a");
+				await store.get("あ");
+				await store.list();
+			});
+
+			it("raises an error for each item", function() {
+				expect(errorSpy).toHaveBeenCalledTimes(2);
+				expect(errorSpy).toHaveBeenNthCalledWith(
+					1,
+					`Key '${removedKey1}' does not exist. Please use \`store add ${removedKey1} [VALUE]\` first.`
+				);
+				expect(errorSpy).toHaveBeenNthCalledWith(
+					2,
+					`Key '${removedKey2}' does not exist. Please use \`store add ${removedKey2} [VALUE]\` first.`
+				);
+			});
+
+			it("does not list any of the removed keys", function() {
+				expect(logSpy).toHaveBeenCalledTimes(2);
+				expect(logSpy).toHaveBeenNthCalledWith(1, validKey1);
+				expect(logSpy).toHaveBeenNthCalledWith(2, validKey2);
+			});
+		});
+	});
 });

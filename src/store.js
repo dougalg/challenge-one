@@ -43,7 +43,7 @@ class Store {
 
 	async get(key) {
 		if (!key) {
-			console.error(`You must provide a key to get: \`get [KEY]\`.`);
+			console.error("You must provide a key to get: `store get [KEY]`.");
 			return;
 		}
 		const fileData = await this._cacheFs.readCacheFile(hashKey(key));
@@ -60,7 +60,7 @@ class Store {
 
 	async remove(...keys) {
 		if (keys.length < 1) {
-			console.error(`You must provide keys to remove: \`remove [KEY]\`.`);
+			console.error("You must provide keys to remove: `store remove [KEY]`.");
 			return;
 		}
 		const cacheDeletions = Promise.all(
