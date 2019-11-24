@@ -102,7 +102,7 @@ class Store {
 			keys.map(key => this._cacheFs.deleteCacheFile(hashKey(key)))
 		);
 
-		await Promise.all(keys.map(key => this._indexFs.remove(key)));
+		await this._indexFs.remove(...keys);
 
 		await Promise.all([cacheDeletions, this._indexFs.write()]);
 	}

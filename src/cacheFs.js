@@ -42,6 +42,14 @@ class CacheFs {
 		}
 	}
 
+	/**
+	 * Saves contents associated a key's hash in a file for later retrieval. In future, if we are concerned
+	 * about performance of large amounts of data, we might want to consider using streams instead of simple strings
+	 * for reading and writing.
+	 *
+	 * @param {String} hash The filename at which to store the contents
+	 * @param {String} contents The contents to be stored
+	 */
 	async writeCacheFile(hash, contents) {
 		await this._initCacheDir();
 		await writeFileAsync(

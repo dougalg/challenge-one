@@ -28,9 +28,11 @@ class IndexFs {
 		this._index[key] = hash;
 	}
 
-	async remove(key) {
+	async remove(...keys) {
 		await this._loadIndex();
-		delete this._index[key];
+		keys.forEach((key) => {
+			delete this._index[key];
+		});
 	}
 
 	async write() {
