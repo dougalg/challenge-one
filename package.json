@@ -3,6 +3,9 @@
 	"version": "1.0.0",
 	"description": "Simple Node developer challenge.",
 	"main": "store",
+	"engines": {
+		"node": ">=10.12.0"
+	},
 	"scripts": {
 		"test": "jest",
 		"lint": "prettier --write \"**/*.{js,json}\""

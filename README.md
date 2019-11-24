@@ -2,6 +2,10 @@
 
 A simple key/value store CLI using only the core Node API.
 
+## Requirements
+
+Requires `node v10.12.0` or later.
+
 ## Installation
 
 1. Clone this repo

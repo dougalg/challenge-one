@@ -21,6 +21,9 @@ class CacheFs {
 	}
 
 	async _initCacheDir() {
+		/**
+		 * If we want to support node < 10.12, we can add error handling here for existing dirs
+		 */
 		await mkdirAsync(this._cacheDir, { recursive: true });
 	}
 

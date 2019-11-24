@@ -10,8 +10,8 @@ const hashKey = string =>
 
 /**
  * Handles the high-level details of each possible action, including
- * giving responses to the based on input and state, and calling into the
- * low-level interfaces fir cache and index as appropriate
+ * giving responses to user the based on input and state, and calling into the
+ * interfaces for cache and index as appropriate
  */
 class Store {
 	constructor(options = {}) {
@@ -23,7 +23,7 @@ class Store {
 	}
 
 	/**
-	 * Add a key an value to the store
+	 * Add a key and value to the store
 	 *
 	 * @param {String} key - A single key to add to the store. Must not match an existing key in the store
 	 * @param  {...String} values - An array of strings which will be concatenated with spaces
@@ -31,11 +31,9 @@ class Store {
 	async add(key, ...values) {
 		if (!key || values.length === 0) {
 			/**
-			 * Might want to consider a better error handling interface, eg: throwing
-			 * an error here and handling it with a nice console log and a non-zero exit
-			 * code, but in a higher
-			 *
-			 * Same for all error logs.
+			 * Might want to consider a better error handling interface, eg: throwing a custom
+			 * error here and handling it with a nice console log wrapper and a non-zero exit
+			 * code, but in a higher/separate part of the codebase
 			 */
 			console.error(
 				"You must provide a key and value to add: `store add [KEY] [VALUE]`."
@@ -104,7 +102,7 @@ class Store {
 			keys.map(key => this._cacheFs.deleteCacheFile(hashKey(key)))
 		);
 
-		keys.forEach(key => this._indexFs.remove(key));
+		await Promise.all(keys.map(key => this._indexFs.remove(key)));
 
 		await Promise.all([cacheDeletions, this._indexFs.write()]);
 	}

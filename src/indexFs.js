@@ -15,7 +15,7 @@ const DEFAULT_INDEX = JSON.stringify({});
  * list of all the valid keys and their associated hashes.
  *
  * TODO: Consider replacing the Object{ key: hash } with an array of keys
- * TODO: Extract out similarities with cacheFs
+ * TODO: Consider replacing cache and index FS with a single CacheFile abstraction?
  */
 class IndexFs {
 	constructor(options = {}) {
@@ -56,6 +56,9 @@ class IndexFs {
 	}
 
 	async _initCacheDir() {
+		/**
+		 * If we want to support node < 10.12, we can add error handling here for existing dirs
+		 */
 		await mkdirAsync(this._cacheDirRoot, { recursive: true });
 	}
 }

@@ -100,21 +100,23 @@ describe("store", function() {
 				expect(fs.writeFile).toHaveBeenCalledTimes(
 					NUMBER_OF_WRITE_FILE_CALLS_FOR_SINGLE_ADD
 				);
-				expect(fs.writeFile.mock.calls[0][0]).toEqual(
-					`${STORE_OPTIONS.cacheDir}/index`
-				);
-				expect(fs.writeFile.mock.calls[1][0]).toEqual(
-					`${STORE_OPTIONS.cacheDir}/cache/${hash}`
+				expect(
+					[fs.writeFile.mock.calls[1][0], fs.writeFile.mock.calls[0][0]].sort()
+				).toEqual(
+					[
+						`${STORE_OPTIONS.cacheDir}/index`,
+						`${STORE_OPTIONS.cacheDir}/cache/${hash}`
+					].sort()
 				);
 			});
 			it("adds an entry to the index", function() {
 				const expectedIdx = JSON.stringify({
 					[key]: hash
 				});
-				expect(fs.writeFile.mock.calls[0][1]).toEqual(expectedIdx);
+				expect(fs.writeFile.mock.calls[1][1]).toEqual(expectedIdx);
 			});
 			it("writes a single cache file with expected values", function() {
-				expect(fs.writeFile.mock.calls[1][1]).toEqual(value);
+				expect(fs.writeFile.mock.calls[0][1]).toEqual(value);
 			});
 		});
 		describe("called with the same value twice", function() {
@@ -134,11 +136,13 @@ describe("store", function() {
 				expect(fs.writeFile).toHaveBeenCalledTimes(
 					NUMBER_OF_WRITE_FILE_CALLS_FOR_SINGLE_ADD
 				);
-				expect(fs.writeFile.mock.calls[0][0]).toEqual(
-					`${STORE_OPTIONS.cacheDir}/index`
-				);
-				expect(fs.writeFile.mock.calls[1][0]).toEqual(
-					`${STORE_OPTIONS.cacheDir}/cache/3bba47553c14a62189f0a8303fba2e38`
+				expect(
+					[fs.writeFile.mock.calls[0][0], fs.writeFile.mock.calls[1][0]].sort()
+				).toEqual(
+					[
+						`${STORE_OPTIONS.cacheDir}/index`,
+						`${STORE_OPTIONS.cacheDir}/cache/3bba47553c14a62189f0a8303fba2e38`
+					].sort()
 				);
 			});
 		});
@@ -155,26 +159,38 @@ describe("store", function() {
 			});
 			it("adds an entry to the index for each item", function() {
 				expect(fs.writeFile).toHaveBeenCalledTimes(4);
-				expect(fs.writeFile.mock.calls[1][0]).toEqual(
-					`${STORE_OPTIONS.cacheDir}/cache/${hash1}`
-				);
-				expect(fs.writeFile.mock.calls[2][0]).toEqual(
-					`${STORE_OPTIONS.cacheDir}/index`
-				);
-				expect(fs.writeFile.mock.calls[3][0]).toEqual(
-					`${STORE_OPTIONS.cacheDir}/cache/${hash2}`
+
+				expect(
+					[
+						fs.writeFile.mock.calls[0][0],
+						fs.writeFile.mock.calls[1][0],
+						fs.writeFile.mock.calls[2][0],
+						fs.writeFile.mock.calls[3][0]
+					].sort()
+				).toEqual(
+					[
+						`${STORE_OPTIONS.cacheDir}/index`,
+						`${STORE_OPTIONS.cacheDir}/cache/${hash1}`,
+						`${STORE_OPTIONS.cacheDir}/index`,
+						`${STORE_OPTIONS.cacheDir}/cache/${hash2}`
+					].sort()
 				);
 			});
 			it("writes a cache file with expected values for each item", function() {
-				expect(fs.writeFile.mock.calls[1][1]).toEqual("wow");
-				expect(fs.writeFile.mock.calls[3][1]).toEqual("wow 2");
+				const callData = fs.writeFile.mock.calls.map(([, data]) => data);
+				expect(callData).toEqual(expect.arrayContaining(["wow", "wow 2"]));
 			});
 			it("adds an entry to the index", function() {
-				const expectedIdx = {
+				const expectedIdx = JSON.stringify({
 					a: hash1,
 					b: hash2
-				};
-				expect(JSON.parse(fs.writeFile.mock.calls[2][1])).toEqual(expectedIdx);
+				});
+				const lastIndexWrite = expect(fs.writeFile).toHaveBeenCalledWith(
+					"hello/index",
+					expectedIdx,
+					{ encoding: "utf8" },
+					expect.any(Function)
+				);
 			});
 		});
 	});
